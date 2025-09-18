@@ -19,11 +19,11 @@
 </head>
 <body>
   <h1>Danh sách Đình Chùa</h1>
-  <div id="list"></div>
+  <div id="list">Đang tải dữ liệu...</div>
 
   <script src="https://cdn.jsdelivr.net/npm/papaparse@5.4.1/papaparse.min.js"></script>
   <script>
-    // Thay <ID> bằng ID Google Sheet của bạn
+    // Link CSV của bạn:
     const sheetCSV = 'https://docs.google.com/spreadsheets/d/1wB3RpeaXcKxTwFBgb4YwG89gwCko4vayAzfoGf1dTdU/gviz/tq?tqx=out:csv';
 
     const listDiv = document.getElementById('list');
@@ -33,23 +33,39 @@
       header: true,
       complete: function(results) {
         const data = results.data;
+        listDiv.innerHTML = ''; // clear "Đang tải dữ liệu..."
+
         data.forEach(row => {
-          if (!row.name) return; // bỏ dòng trống
+          const name = row.name || row.Name;
+          const description = row.description || row.Description;
+          const lat = row.lat || row.Lat;
+          const lng = row.lng || row.Lng;
+          const imagesStr = row.images || row.Images;
+
+          if (!name) return;
+
           const item = document.createElement('div');
           item.className = 'item';
-          
-          // Xử lý ảnh (nhiều ảnh cách nhau bằng ;)
-          const images = (row.images || '').split(';').map(img => img.trim()).filter(x => x);
+
+          const images = (imagesStr || '').split(';').map(img => img.trim()).filter(x => x);
           const imageHTML = images.map(img => `<img src="${img}" alt="">`).join('');
 
           item.innerHTML = `
-            <h3>${row.name}</h3>
-            <p>${row.description}</p>
-            <p><b>Tọa độ:</b> ${row.lat}, ${row.lng}</p>
+            <h3>${name}</h3>
+            <p>${description}</p>
+            <p><b>Tọa độ:</b> ${lat}, ${lng}</p>
             <div class="images">${imageHTML}</div>
           `;
           listDiv.appendChild(item);
         });
+
+        if (!listDiv.innerHTML) {
+          listDiv.textContent = 'Không có dữ liệu hoặc tên cột không khớp.';
+        }
+      },
+      error: function(err) {
+        listDiv.textContent = 'Lỗi tải dữ liệu: ' + err;
+        console.error(err);
       }
     });
   </script>
