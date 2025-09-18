@@ -12,19 +12,43 @@
 <script>
 const sheetUrl = 'https://docs.google.com/spreadsheets/d/e/2PACX-1vRtuCf5kDrCceF7-oAI1IKNh2vjR3HCKtwKOROB1Swz2bRwCdqpki7kQqT_DwecG77ckhxmO7LgUdJ2/pub?gid=0&single=true&output=csv';
 
+function parseCSV(text) {
+  // tách theo dòng
+  const lines = text.split(/\r?\n/);
+  const result = [];
+  const headers = lines[0].split(',').map(h=>h.trim().toLowerCase());
+  for (let i = 1; i < lines.length; i++) {
+    // bỏ qua dòng rỗng
+    if (!lines[i].trim()) continue;
+    // xử lý dấu phẩy trong ngoặc kép
+    const row = [];
+    let insideQuotes = false;
+    let value = '';
+    for (let char of lines[i]) {
+      if (char === '"' ) {
+        insideQuotes = !insideQuotes;
+      } else if (char === ',' && !insideQuotes) {
+        row.push(value);
+        value = '';
+      } else {
+        value += char;
+      }
+    }
+    row.push(value);
+    const obj = {};
+    headers.forEach((h, idx) => obj[h] = (row[idx] || '').replace(/^"|"$/g,''));
+    result.push(obj);
+  }
+  return result;
+}
+
 fetch(sheetUrl)
-  .then(res => {
-    if (!res.ok) throw new Error('Không tải được CSV');
-    return res.text();
-  })
+  .then(res => res.text())
   .then(text => {
-    const rows = text.trim().split('\n').map(r => r.split(','));
-    const headers = rows.shift().map(h => h.trim().toLowerCase());
+    const data = parseCSV(text);
     const list = document.getElementById('list');
 
-    rows.forEach(row => {
-      const obj = {};
-      headers.forEach((h,i) => obj[h] = row[i]);
+    data.forEach(obj => {
       if (obj.name && obj.description) {
         const li = document.createElement('li');
         li.innerHTML = `<b>${obj.name}</b>: ${obj.description} (Lat: ${obj.lat}, Lng: ${obj.lng})`;
