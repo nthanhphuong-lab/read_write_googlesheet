@@ -7,48 +7,38 @@
 </head>
 <body>
 <h1>Danh sách Đình Chùa</h1>
+
 <ul id="list"></ul>
+
+<h2>Nhập địa điểm mới</h2>
+<form id="addForm">
+  <input type="text" id="name" placeholder="Tên" required><br>
+  <input type="text" id="description" placeholder="Mô tả" required><br>
+  <input type="text" id="lat" placeholder="Lat" required><br>
+  <input type="text" id="lng" placeholder="Lng" required><br>
+  <button type="submit">Thêm</button>
+</form>
+<div id="msg"></div>
 
 <script>
 const sheetUrl = 'https://docs.google.com/spreadsheets/d/e/2PACX-1vRtuCf5kDrCceF7-oAI1IKNh2vjR3HCKtwKOROB1Swz2bRwCdqpki7kQqT_DwecG77ckhxmO7LgUdJ2/pub?gid=0&single=true&output=csv';
+// URL web app Apps Script bạn đã deploy
+const scriptUrl = 'https://script.google.com/a/macros/agu.edu.vn/s/AKfycbzD7NSNvO0cZuL8AZTwXBtwLalwSAg0r8EMTYUQpBJf/dev'; // đổi URL này
 
-function parseCSV(text) {
-  // tách theo dòng
-  const lines = text.split(/\r?\n/);
-  const result = [];
-  const headers = lines[0].split(',').map(h=>h.trim().toLowerCase());
-  for (let i = 1; i < lines.length; i++) {
-    // bỏ qua dòng rỗng
-    if (!lines[i].trim()) continue;
-    // xử lý dấu phẩy trong ngoặc kép
-    const row = [];
-    let insideQuotes = false;
-    let value = '';
-    for (let char of lines[i]) {
-      if (char === '"' ) {
-        insideQuotes = !insideQuotes;
-      } else if (char === ',' && !insideQuotes) {
-        row.push(value);
-        value = '';
-      } else {
-        value += char;
-      }
-    }
-    row.push(value);
-    const obj = {};
-    headers.forEach((h, idx) => obj[h] = (row[idx] || '').replace(/^"|"$/g,''));
-    result.push(obj);
-  }
-  return result;
-}
-
+// ----- HIỂN THỊ DANH SÁCH -----
 fetch(sheetUrl)
-  .then(res => res.text())
+  .then(res => {
+    if (!res.ok) throw new Error('Không tải được CSV');
+    return res.text();
+  })
   .then(text => {
-    const data = parseCSV(text);
+    const rows = text.trim().split('\n').map(r => r.split(','));
+    const headers = rows.shift().map(h => h.trim().toLowerCase());
     const list = document.getElementById('list');
 
-    data.forEach(obj => {
+    rows.forEach(row => {
+      const obj = {};
+      headers.forEach((h,i) => obj[h] = row[i]);
       if (obj.name && obj.description) {
         const li = document.createElement('li');
         li.innerHTML = `<b>${obj.name}</b>: ${obj.description} (Lat: ${obj.lat}, Lng: ${obj.lng})`;
@@ -64,7 +54,35 @@ fetch(sheetUrl)
     console.error(err);
     document.getElementById('list').innerHTML = '<li>Lỗi tải dữ liệu.</li>';
   });
-</script>
 
+// ----- NHẬP DỮ LIỆU MỚI -----
+document.getElementById('addForm').addEventListener('submit', function(e) {
+  e.preventDefault();
+  const data = {
+    name: document.getElementById('name').value,
+    description: document.getElementById('description').value,
+    lat: document.getElementById('lat').value,
+    lng: document.getElementById('lng').value
+  };
+
+  fetch(scriptUrl, {
+    method: 'POST',
+    body: JSON.stringify(data),
+    headers: {
+      'Content-Type': 'application/json'
+    }
+  })
+  .then(res => res.json())
+  .then(res => {
+    document.getElementById('msg').innerText = 'Đã thêm dữ liệu thành công!';
+    // reset form
+    document.getElementById('addForm').reset();
+  })
+  .catch(err => {
+    console.error(err);
+    document.getElementById('msg').innerText = 'Lỗi khi thêm dữ liệu!';
+  });
+});
+</script>
 </body>
 </html>
