@@ -10,78 +10,55 @@
 
 <ul id="list"></ul>
 
-<h2>Nhập địa điểm mới</h2>
+<h2>Thêm dữ liệu</h2>
 <form id="addForm">
   <input type="text" id="name" placeholder="Tên" required><br>
-  <input type="text" id="description" placeholder="Mô tả" required><br>
-  <input type="text" id="lat" placeholder="Lat" required><br>
-  <input type="text" id="lng" placeholder="Lng" required><br>
+  <textarea id="description" placeholder="Mô tả" required></textarea><br>
+  <input type="text" id="lat" placeholder="Latitude" required><br>
+  <input type="text" id="lng" placeholder="Longitude" required><br>
+  <input type="text" id="images" placeholder="Hình ảnh (vd: img.jpg)"><br>
   <button type="submit">Thêm</button>
 </form>
-<div id="msg"></div>
 
 <script>
-const sheetUrl = 'https://docs.google.com/spreadsheets/d/e/2PACX-1vRtuCf5kDrCceF7-oAI1IKNh2vjR3HCKtwKOROB1Swz2bRwCdqpki7kQqT_DwecG77ckhxmO7LgUdJ2/pub?gid=0&single=true&output=csv';
-// URL web app Apps Script bạn đã deploy
-const scriptUrl = 'https://script.google.com/macros/s/AKfycbz80hpSju9Q8xoiqYKDvrXebVijZEKbqOXZLUjFsXjYGeCRhvueL6dpiSELUOnixD0_DQ/exec'; // đổi URL này
+const webAppUrl = 'https://script.google.com/macros/s/AKfycbz80hpSju9Q8xoiqYKDvrXebVijZEKbqOXZLUjFsXjYGeCRhvueL6dpiSELUOnixD0_DQ/exec';
 
-// ----- HIỂN THỊ DANH SÁCH -----
-fetch(sheetUrl)
-  .then(res => {
-    if (!res.ok) throw new Error('Không tải được CSV');
-    return res.text();
-  })
-  .then(text => {
-    const rows = text.trim().split('\n').map(r => r.split(','));
-    const headers = rows.shift().map(h => h.trim().toLowerCase());
+// --- load danh sách ---
+fetch(webAppUrl)
+  .then(res => res.json())
+  .then(data => {
     const list = document.getElementById('list');
-
-    rows.forEach(row => {
-      const obj = {};
-      headers.forEach((h,i) => obj[h] = row[i]);
-      if (obj.name && obj.description) {
-        const li = document.createElement('li');
-        li.innerHTML = `<b>${obj.name}</b>: ${obj.description} (Lat: ${obj.lat}, Lng: ${obj.lng})`;
-        list.appendChild(li);
-      }
+    data.forEach(item => {
+      const li = document.createElement('li');
+      li.innerHTML = `<b>${item.name}</b>: ${item.description} (Lat: ${item.lat}, Lng: ${item.lng})`;
+      list.appendChild(li);
     });
-
-    if (list.innerHTML === '') {
-      list.innerHTML = '<li>Không có dữ liệu hoặc tên cột không khớp.</li>';
-    }
   })
-  .catch(err => {
-    console.error(err);
-    document.getElementById('list').innerHTML = '<li>Lỗi tải dữ liệu.</li>';
-  });
+  .catch(err => console.error(err));
 
-// ----- NHẬP DỮ LIỆU MỚI -----
-document.getElementById('addForm').addEventListener('submit', function(e) {
+// --- thêm dữ liệu ---
+document.getElementById('addForm').addEventListener('submit', function(e){
   e.preventDefault();
-  const data = {
+  const payload = {
     name: document.getElementById('name').value,
     description: document.getElementById('description').value,
     lat: document.getElementById('lat').value,
-    lng: document.getElementById('lng').value
+    lng: document.getElementById('lng').value,
+    images: document.getElementById('images').value
   };
 
-  fetch(scriptUrl, {
+  fetch(webAppUrl, {
     method: 'POST',
-    body: JSON.stringify(data),
-    headers: {
-      'Content-Type': 'application/json'
-    }
+    mode: 'no-cors',  // tránh lỗi CORS
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify(payload)
   })
-  .then(res => res.json())
-  .then(res => {
-    document.getElementById('msg').innerText = 'Đã thêm dữ liệu thành công!';
-    // reset form
+  .then(() => {
+    alert('Đã gửi dữ liệu (chưa nhận phản hồi do no-cors)');
+    // Reset form
     document.getElementById('addForm').reset();
   })
-  .catch(err => {
-    console.error(err);
-    document.getElementById('msg').innerText = 'Lỗi khi thêm dữ liệu!';
-  });
+  .catch(err => console.error(err));
 });
 </script>
 </body>
