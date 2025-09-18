@@ -1,0 +1,57 @@
+<!DOCTYPE html>
+<html lang="vi">
+<head>
+  <meta charset="UTF-8">
+  <title>Danh sách Đình Chùa</title>
+  <style>
+    body { font-family: sans-serif; margin: 20px; }
+    .item {
+      border: 1px solid #ccc; padding: 10px; margin-bottom: 10px; border-radius: 6px;
+    }
+    .images {
+      display: flex; flex-wrap: wrap; gap: 5px; margin-top: 5px;
+    }
+    .images img {
+      width: 120px; height: 80px; object-fit: cover; border-radius: 4px;
+    }
+    h1 { margin-bottom: 20px; }
+  </style>
+</head>
+<body>
+  <h1>Danh sách Đình Chùa</h1>
+  <div id="list"></div>
+
+  <script src="https://cdn.jsdelivr.net/npm/papaparse@5.4.1/papaparse.min.js"></script>
+  <script>
+    // Thay <ID> bằng ID Google Sheet của bạn
+    const sheetCSV = 'https://docs.google.com/spreadsheets/d/2PACX-1vRtuCf5kDrCceF7-oAI1IKNh2vjR3HCKtwKOROB1Swz2bRwCdqpki7kQqT_DwecG77ckhxmO7LgUdJ2/gviz/tq?tqx=out:csv';
+
+    const listDiv = document.getElementById('list');
+
+    Papa.parse(sheetCSV, {
+      download: true,
+      header: true,
+      complete: function(results) {
+        const data = results.data;
+        data.forEach(row => {
+          if (!row.name) return; // bỏ dòng trống
+          const item = document.createElement('div');
+          item.className = 'item';
+          
+          // Xử lý ảnh (nhiều ảnh cách nhau bằng ;)
+          const images = (row.images || '').split(';').map(img => img.trim()).filter(x => x);
+          const imageHTML = images.map(img => `<img src="${img}" alt="">`).join('');
+
+          item.innerHTML = `
+            <h3>${row.name}</h3>
+            <p>${row.description}</p>
+            <p><b>Tọa độ:</b> ${row.lat}, ${row.lng}</p>
+            <div class="images">${imageHTML}</div>
+          `;
+          listDiv.appendChild(item);
+        });
+      }
+    });
+  </script>
+</body>
+</html>
