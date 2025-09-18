@@ -1,73 +1,46 @@
 <!DOCTYPE html>
 <html lang="vi">
 <head>
-  <meta charset="UTF-8">
-  <title>Danh sách Đình Chùa</title>
-  <style>
-    body { font-family: sans-serif; margin: 20px; }
-    .item {
-      border: 1px solid #ccc; padding: 10px; margin-bottom: 10px; border-radius: 6px;
-    }
-    .images {
-      display: flex; flex-wrap: wrap; gap: 5px; margin-top: 5px;
-    }
-    .images img {
-      width: 120px; height: 80px; object-fit: cover; border-radius: 4px;
-    }
-    h1 { margin-bottom: 20px; }
-  </style>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Danh sách Đình Chùa</title>
 </head>
 <body>
-  <h1>Danh sách Đình Chùa</h1>
-  <div id="list">Đang tải dữ liệu...</div>
+<h1>Danh sách Đình Chùa</h1>
+<ul id="list"></ul>
 
-  <script src="https://cdn.jsdelivr.net/npm/papaparse@5.4.1/papaparse.min.js"></script>
-  <script>
-    // Link CSV của bạn:
-    const sheetCSV = 'https://docs.google.com/spreadsheets/d/1wB3RpeaXcKxTwFBgb4YwG89gwCko4vayAzfoGf1dTdU/gviz/tq?tqx=out:csv';
+<script>
+const sheetUrl = 'https://docs.google.com/spreadsheets/d/1wB3RpeaXcKxTwFBgb4YwG89gwCko4vayAzfoGf1dTdU/gviz/tq?tqx=out:csv&sheet=data_chua_dinh';
 
-    const listDiv = document.getElementById('list');
+fetch(sheetUrl)
+  .then(res => {
+    if (!res.ok) throw new Error('Không tải được CSV');
+    return res.text();
+  })
+  .then(text => {
+    const rows = text.trim().split('\n').map(r => r.split(','));
+    const headers = rows.shift().map(h => h.trim().toLowerCase());
+    const list = document.getElementById('list');
 
-    Papa.parse(sheetCSV, {
-      download: true,
-      header: true,
-      complete: function(results) {
-        const data = results.data;
-        listDiv.innerHTML = ''; // clear "Đang tải dữ liệu..."
-
-        data.forEach(row => {
-          const name = row.name || row.Name;
-          const description = row.description || row.Description;
-          const lat = row.lat || row.Lat;
-          const lng = row.lng || row.Lng;
-          const imagesStr = row.images || row.Images;
-
-          if (!name) return;
-
-          const item = document.createElement('div');
-          item.className = 'item';
-
-          const images = (imagesStr || '').split(';').map(img => img.trim()).filter(x => x);
-          const imageHTML = images.map(img => `<img src="${img}" alt="">`).join('');
-
-          item.innerHTML = `
-            <h3>${name}</h3>
-            <p>${description}</p>
-            <p><b>Tọa độ:</b> ${lat}, ${lng}</p>
-            <div class="images">${imageHTML}</div>
-          `;
-          listDiv.appendChild(item);
-        });
-
-        if (!listDiv.innerHTML) {
-          listDiv.textContent = 'Không có dữ liệu hoặc tên cột không khớp.';
-        }
-      },
-      error: function(err) {
-        listDiv.textContent = 'Lỗi tải dữ liệu: ' + err;
-        console.error(err);
+    rows.forEach(row => {
+      const obj = {};
+      headers.forEach((h,i) => obj[h] = row[i]);
+      // Kiểm tra có cột name không
+      if (obj.name && obj.description) {
+        const li = document.createElement('li');
+        li.innerHTML = `<b>${obj.name}</b>: ${obj.description} (Lat: ${obj.lat}, Lng: ${obj.lng})`;
+        list.appendChild(li);
       }
     });
-  </script>
+
+    if (list.innerHTML === '') {
+      list.innerHTML = '<li>Không có dữ liệu hoặc tên cột không khớp.</li>';
+    }
+  })
+  .catch(err => {
+    console.error(err);
+    document.getElementById('list').innerHTML = '<li>Lỗi tải dữ liệu.</li>';
+  });
+</script>
 </body>
 </html>
