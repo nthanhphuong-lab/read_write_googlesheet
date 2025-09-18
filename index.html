@@ -10,7 +10,7 @@
 <ul id="list"></ul>
 
 <script>
-const sheetUrl = 'https://docs.google.com/spreadsheets/d/1wB3RpeaXcKxTwFBgb4YwG89gwCko4vayAzfoGf1dTdU/gviz/tq?tqx=out:csv&sheet=data_chua_dinh';
+const sheetUrl = 'https://docs.google.com/spreadsheets/d/e/2PACX-1vRtuCf5kDrCceF7-oAI1IKNh2vjR3HCKtwKOROB1Swz2bRwCdqpki7kQqT_DwecG77ckhxmO7LgUdJ2/pub?gid=0&single=true&output=csv';
 
 fetch(sheetUrl)
   .then(res => {
@@ -25,7 +25,6 @@ fetch(sheetUrl)
     rows.forEach(row => {
       const obj = {};
       headers.forEach((h,i) => obj[h] = row[i]);
-      // Kiểm tra có cột name không
       if (obj.name && obj.description) {
         const li = document.createElement('li');
         li.innerHTML = `<b>${obj.name}</b>: ${obj.description} (Lat: ${obj.lat}, Lng: ${obj.lng})`;
@@ -42,5 +41,6 @@ fetch(sheetUrl)
     document.getElementById('list').innerHTML = '<li>Lỗi tải dữ liệu.</li>';
   });
 </script>
+
 </body>
 </html>
